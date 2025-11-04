@@ -1,0 +1,5 @@
+**/nlu_model_finetuned/
+**/slot_model_finetuned/
+**/.venv/
+**/__pycache__/
+**/vosk-model-it

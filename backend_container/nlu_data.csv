@@ -1,0 +1,380 @@
+text,label
+# INTENT: riproduci_musica (100 esempi totali)
+metti su un po' di musica,riproduci_musica
+riproduci la mia playlist preferita,riproduci_musica
+fammi sentire qualcosa di allegro,riproduci_musica
+avvia la riproduzione musicale,riproduci_musica
+riproduci brani rock,riproduci_musica
+voglio ascoltare musica classica,riproduci_musica
+metti la musica adesso,riproduci_musica
+accendi lo stereo,riproduci_musica
+avvia la riproduzione,riproduci_musica
+fammi sentire musica pop,riproduci_musica
+musica,riproduci_musica
+playlist,riproduci_musica
+ascoltiamo musica,riproduci_musica
+metti un po' di jazz,riproduci_musica
+voglio ballare,riproduci_musica
+metti un volume alto,riproduci_musica
+alza il volume,riproduci_musica
+abbassa la musica,riproduci_musica
+ferma la musica,riproduci_musica
+silenzio,riproduci_musica
+next song,riproduci_musica
+prossimo brano,riproduci_musica
+salta questa canzone,riproduci_musica
+pausa,riproduci_musica
+vai avanti,riproduci_musica
+riproduci la canzone successiva,riproduci_musica
+metti la radio,riproduci_musica
+voglio sentire [Nome Artista],riproduci_musica
+riproduci la colonna sonora di [Nome Film],riproduci_musica
+metti la musica a tutto volume,riproduci_musica
+diminuisci l'audio,riproduci_musica
+torna indietro di un brano,riproduci_musica
+avvia la riproduzione casuale,riproduci_musica
+metti in pausa l'audio,riproduci_musica
+metti in loop l'album,riproduci_musica
+musica rilassante,riproduci_musica
+fammi sentire qualcosa di nuovo,riproduci_musica
+non mi piace,riproduci_musica
+volume 3,riproduci_musica
+aumenta il volume,riproduci_musica
+metti l'ultima di [Nome Artista],riproduci_musica
+riavvolgi il brano,riproduci_musica
+riparti dall'inizio,riproduci_musica
+riproduci la playlist di allenamento,riproduci_musica
+ascolta,riproduci_musica
+dammi un po' di musica,riproduci_musica
+metti su Spotify,riproduci_musica
+riproduci dal servizio,riproduci_musica
+pausa per 5 minuti,riproduci_musica
+riprendi la riproduzione,riproduci_musica
+metti canzoni anni '90,riproduci_musica
+musica triste,riproduci_musica
+musica felice,riproduci_musica
+metti musica soft,riproduci_musica
+un brano veloce,riproduci_musica
+un pezzo lento,riproduci_musica
+metti il volume a 7,riproduci_musica
+disattiva l'audio,riproduci_musica
+metti la traccia precedente,riproduci_musica
+prossimo,riproduci_musica
+canzone,riproduci_musica
+fammi sentire il nuovo singolo,riproduci_musica
+musica italiana,riproduci_musica
+canzoni straniere,riproduci_musica
+riproduci in sottofondo,riproduci_musica
+qualcosa di ritmato,riproduci_musica
+musica per dormire,riproduci_musica
+voglio musica ambient,riproduci_musica
+riproduci la stazione [Nome Radio],riproduci_musica
+ascolta la radio online,riproduci_musica
+interrompi l'audio,riproduci_musica
+spegni l'altoparlante,riproduci_musica
+riproduci dal mio telefono,riproduci_musica
+metti canzoni a caso,riproduci_musica
+riproduci questo album,riproduci_musica
+tieni il volume basso,riproduci_musica
+alzalo ancora un po',riproduci_musica
+diminuisci l'audio leggermente,riproduci_musica
+metto la musica,riproduci_musica
+riproduci la traccia [Numero],riproduci_musica
+procedi,riproduci_musica
+metti in play,riproduci_musica
+ferma tutto,riproduci_musica
+riproduci la mia compilation,riproduci_musica
+musica da discoteca,riproduci_musica
+volume più alto,riproduci_musica
+vai alla canzone dopo,riproduci_musica
+fai un po' di rumore,riproduci_musica
+metti la riproduzione,riproduci_musica
+basta con la musica,riproduci_musica
+fermati,riproduci_musica
+
+# INTENT: chat_generale (100 esempi totali)
+parlami della storia romana,chat_generale
+raccontami una barzelletta,chat_generale
+cosa pensi dell'intelligenza artificiale,chat_generale
+spiegami la relatività,chat_generale
+chi è il presidente della repubblica,chat_generale
+come funziona un computer,chat_generale
+che giorno è oggi,chat_generale
+dammi una notizia,chat_generale
+sintetizza questo argomento,chat_generale
+fai un riassunto,chat_generale
+dimmi qualcosa di interessante,chat_generale
+cosa sai fare,chat_generale
+come ti chiami,chat_generale
+dimmi una poesia,chat_generale
+parla in italiano,chat_generale
+rispondi alla mia domanda,chat_generale
+fammi una domanda,chat_generale
+cosa dovrei fare adesso,chat_generale
+dammi un consiglio,chat_generale
+qual è il tuo nome,chat_generale
+come stai,chat_generale
+dimmi l'ora,chat_generale
+che ore sono,chat_generale
+fammi il punto della situazione,chat_generale
+hai qualcosa da aggiungere,chat_generale
+chi sei veramente?,chat_generale
+raccontami una storia,chat_generale
+cosa è successo oggi nel mondo,chat_generale
+qual è la capitale del [Nome Paese],chat_generale
+spiegami cosa sono i buchi neri,chat_generale
+come si fa [Nome Ricetta],chat_generale
+dammi la definizione di [Parola],chat_generale
+che tempo farà domani,chat_generale
+cosa c'è di nuovo?,chat_generale
+parlami della tua giornata,chat_generale
+hai un umore?,chat_generale
+dimmi un proverbio,chat_generale
+fammi un esempio pratico,chat_generale
+cosa significa [Parola Straniera],chat_generale
+quali sono i tuoi obiettivi?,chat_generale
+raccontami di un animale,chat_generale
+qual è il senso della vita?,chat_generale
+rispondimi,chat_generale
+sei un robot?,chat_generale
+hai una famiglia?,chat_generale
+dimmi un segreto,chat_generale
+qual è la tua opinione su questo?,chat_generale
+aiutami con la matematica,chat_generale
+traduci in inglese,chat_generale
+come posso imparare [Nome Lingua],chat_generale
+dimmi una curiosità scientifica,chat_generale
+che giorno era il [Data],chat_generale
+quanto tempo ci vuole per [Azione],chat_generale
+dammi un sinonimo,chat_generale
+fai una previsione,chat_generale
+c'è qualcosa che dovrei sapere?,chat_generale
+come funziona la borsa?,chat_generale
+fammi un quiz,chat_generale
+raccontami una leggenda,chat_generale
+che differenza c'è tra [Cosa 1] e [Cosa 2],chat_generale
+dimmi le ultime sul campionato,chat_generale
+come si chiama l'autore di [Nome Libro],chat_generale
+dammi un consiglio di viaggio,chat_generale
+cosa fai nel tempo libero?,chat_generale
+come si pronuncia [Parola],chat_generale
+cercami [Argomento],chat_generale
+fai una ricerca,chat_generale
+siamo soli nell'universo?,chat_generale
+parlami di filosofia,chat_generale
+dimmi una frase motivazionale,chat_generale
+cosa dovrei leggere?,chat_generale
+come si misura la distanza?,chat_generale
+dammi le istruzioni per [Azione],chat_generale
+che cos'è un algoritmo?,chat_generale
+illuminami su questo argomento,chat_generale
+dimmi la temperatura,chat_generale
+dove si trova [Luogo],chat_generale
+cosa succederà,chat_generale
+come posso migliorare?,chat_generale
+raccontami un aneddoto,chat_generale
+dimmi qualcosa di te,chat_generale
+qual è il tuo scopo?,chat_generale
+spiegami meglio,chat_generale
+c'è vita su Marte?,chat_generale
+quanto è grande la Terra?,chat_generale
+fammi un calcolo,chat_generale
+quanto fa 10 più 5?,chat_generale
+quali sono i tuoi dati?,chat_generale
+dimmi la data di oggi,chat_generale
+hai delle sensazioni?,chat_generale
+cosa mi consigli?,chat_generale
+esattamente,chat_generale
+ok,chat_generale
+
+# INTENT: goodbye (100 esempi totali)
+grazie e ciao,goodbye
+ci sentiamo più tardi,goodbye
+spegni,goodbye
+basta così,goodbye
+addio,goodbye
+a dopo,goodbye
+stop,goodbye
+finito,goodbye
+puoi andare,goodbye
+esco,goodbye
+chiudi,goodbye
+fine della conversazione,goodbye
+ho finito,goodbye
+ciao,goodbye
+chiuditi,goodbye
+spegniti,goodbye
+grazie,goodbye
+basta,goodbye
+puoi chiudere,goodbye
+termina,goodbye
+a domani,goodbye
+salutami,goodbye
+arrivederci,goodbye
+per oggi è tutto,goodbye
+ok basta,goodbye
+buonanotte,goodbye
+buona giornata,goodbye
+ci si vede,goodbye
+alla prossima,goodbye
+ho concluso,goodbye
+non ho più bisogno di te,goodbye
+sessione terminata,goodbye
+fine,goodbye
+interrompi,goodbye
+grazie mille,goodbye
+è stato utile,goodbye
+ti saluto,goodbye
+ci sentiamo,goodbye
+vado via ora,goodbye
+a mai più,goodbye
+puoi disconnetterti,goodbye
+spero di sentirti presto,goodbye
+fine del dialogo,goodbye
+non voglio continuare,goodbye
+ho finito la mia richiesta,goodbye
+grazie per l'aiuto,goodbye
+ho concluso le mie domande,goodbye
+spegniti ora,goodbye
+chiudi il programma,goodbye
+esco dalla chat,goodbye
+è stato un piacere,goodbye
+buona sera,goodbye
+a presto,goodbye
+devo andare,goodbye
+ci vediamo dopo,goodbye
+arrivederci,goodbye
+non serve altro,goodbye
+ho terminato di parlare,goodbye
+basta adesso,goodbye
+puoi chiudere tutto,goodbye
+fine della sessione,goodbye
+per il momento è sufficiente,goodbye
+ho finito qui,goodbye
+basta così per ora,goodbye
+ok ci sentiamo,goodbye
+a risentirci,goodbye
+ci sentiamo domani,goodbye
+grazie e saluti,goodbye
+buon lavoro,goodbye
+ora devo proprio andare,goodbye
+interrompi la comunicazione,goodbye
+fai lo stop,goodbye
+non rispondere più,goodbye
+non ho altre domande,goodbye
+è ora di salutarsi,goodbye
+ci risentiamo,goodbye
+puoi chiudere il sistema,goodbye
+devo spegnere,goodbye
+siamo arrivati alla fine,goodbye
+grazie tante,goodbye
+tanti saluti,goodbye
+ok arrivederci,goodbye
+basta così,goodbye
+ti lascio,goodbye
+a tra poco,goodbye
+non continuare,goodbye
+stop alla conversazione,goodbye
+chiudi la connessione,goodbye
+saluto finale,goodbye
+per oggi ho finito,goodbye
+a risentirti,goodbye
+puoi smettere,goodbye
+fine richiesta,goodbye
+
+# INTENT: unrecognized (100 esempi totali)
+non ho capito cosa hai detto,unrecognized
+fammi un caffè,unrecognized
+la macchina si è rotta,unrecognized
+apri la porta di casa,unrecognized
+dove ho messo le chiavi,unrecognized
+voglio comprare un cappotto,unrecognized
+perché il cielo è blu,unrecognized
+ho bisogno di un tavolo,unrecognized
+guarda fuori dalla finestra,unrecognized
+il mio cane sta abbaiando,unrecognized
+quella sedia è comoda,unrecognized
+siamo andati al cinema,unrecognized
+mi fai un riassunto,unrecognized
+prendi quel libro per me,unrecognized
+ho freddo,unrecognized
+accendi le luci,unrecognized
+ho sete,unrecognized
+la risposta è sbagliata,unrecognized
+non ho voglia di cucinare,unrecognized
+il treno è in ritardo,unrecognized
+vado a letto,unrecognized
+la mia sveglia non ha suonato,unrecognized
+ho perso il portafoglio,unrecognized
+mi piace il colore blu,unrecognized
+ho un'altra idea,unrecognized
+cosa c'è di interessante su Marte,unrecognized
+puoi stirare i miei vestiti,unrecognized
+non trovo il mio telecomando,unrecognized
+questa domanda è troppo difficile,unrecognized
+il frigorifero è vuoto,unrecognized
+devi comprare il latte,unrecognized
+fammi un massaggio,unrecognized
+voglio la password del wi-fi,unrecognized
+come posso vincere alla lotteria,unrecognized
+riparami il lavandino,unrecognized
+questo muro è di un bel colore,unrecognized
+non funziona internet,unrecognized
+dove ho parcheggiato l'auto,unrecognized
+accendi il riscaldamento,unrecognized
+portami il giornale,unrecognized
+la mia stampante è bloccata,unrecognized
+il gatto ha mangiato troppo,unrecognized
+non riesco a dormire,unrecognized
+cambiami la gomma della bicicletta,unrecognized
+voglio un panino al prosciutto,unrecognized
+quel film era noioso,unrecognized
+ho fame adesso,unrecognized
+dammi le istruzioni per un aereo,unrecognized
+il mio telefono è scarico,unrecognized
+puliscimi la stanza,unrecognized
+spegni l'allarme antincendio,unrecognized
+non capisco il linguaggio dei segni,unrecognized
+metti a posto i giocattoli,unrecognized
+qual è l'ingrediente segreto,unrecognized
+lavami i piatti,unrecognized
+portami le pantofole,unrecognized
+non mi sento bene,unrecognized
+il mio telefono è in carica,unrecognized
+ho bucato una gomma,unrecognized
+voglio fare la spesa,unrecognized
+questo vestito è bellissimo,unrecognized
+ho bisogno di un dottore,unrecognized
+il postino non è ancora arrivato,unrecognized
+fammi vedere la televisione,unrecognized
+questa penna non scrive,unrecognized
+la porta è chiusa a chiave,unrecognized
+accendi la candela,unrecognized
+ho perso gli occhiali,unrecognized
+la neve è arrivata,unrecognized
+non voglio parlare con te,unrecognized
+dammi un passaggio,unrecognized
+la batteria è scarica,unrecognized
+il computer è lento,unrecognized
+non sono d'accordo con te,unrecognized
+vorrei un preventivo,unrecognized
+questo è molto strano,unrecognized
+devi imparare a cucinare,unrecognized
+la sedia è rotta,unrecognized
+non mi hai ascoltato,unrecognized
+come faccio a guidare,unrecognized
+non riesco ad aprire,unrecognized
+voglio un cane,unrecognized
+prendi l'ombrello,unrecognized
+ho sete e fame,unrecognized
+non ho soldi,unrecognized
+la batteria del telefono è rotta,unrecognized
+il mio letto è comodo,unrecognized
+voglio ordinare una pizza,unrecognized
+dov'è la stazione dei treni,unrecognized
+parlami del mio lavoro,unrecognized
+non ho tempo,unrecognized
+questa cosa non è vera,unrecognized
+devi essere più gentile,unrecognized
+cambia il canale,unrecognized
+metti a fuoco la telecamera,unrecognized
