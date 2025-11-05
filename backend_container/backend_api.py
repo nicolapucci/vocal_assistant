@@ -4,27 +4,40 @@ import os
 import wave
 import json
 import tempfile
-from vosk import Model,KaldiRecognizer
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification
+from vosk import (Model,
+                  KaldiRecognizer)
+from transformers import (AutoTokenizer,
+                          AutoModelForSequenceClassification,
+                          AutoModelForTokenClassification)
+from datasets import load_dataset
+import numpy as np
 
 app = Flask(__name__)
-MODEL_PATH = "vosk-model-it"
+VOSK_MODEL_PATH = "vosk-model-en"
 
 print(f"CUDA disponibile in PyTorch: {torch.cuda.is_available()}")
 print(f"GPU Trovata: {torch.cuda.get_device_name(0)}")
 
 #--- load stt model ----#
 try:
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
+    if not os.path.exists(VOSK_MODEL_PATH):
+        raise FileNotFoundError(f"Model not found: {VOSK_MODEL_PATH}")
     
-    vosk_model = Model(MODEL_PATH)
+    vosk_model = Model(VOSK_MODEL_PATH)
     print("Model loeaded successfully")
 
 except Exception as e:
     print (f"Critical Error: {e}")
     vosk_model=None
 #-----------------------#
+
+def clean_command_text(text):
+    # Rimuove apostrofi e li sostituisce con un semplice spazio (o li elimina)
+    text = text.replace("'s", "")
+    text = text.replace("'", "")
+    # Rimuove punteggiatura, ecc., se necessario
+    # text = re.sub(r'[^\w\s]', '', text) 
+    return text.lower().strip()
 
 
 #-- stt transcription --#
@@ -55,16 +68,72 @@ def transcribe_audio(filepath):
 
 
 
-INTENTS = [
-    'riproduci_musica',
-    'chat_generale',
-    'goodbye',
-    'unrecognized'
-]
+INTENTS = ['datetime_query',
+           'iot_hue_lightchange',
+           'transport_ticket',
+           'takeaway_query',
+           'qa_stock',
+           'general_greet',
+           'recommendation_events',
+           'music_dislikeness',
+           'iot_wemo_off',
+           'cooking_recipe',
+           'qa_currency',
+           'transport_traffic',
+           'general_quirky',
+           'weather_query', 
+           'audio_volume_up',
+           'email_addcontact',
+           'takeaway_order',
+           'email_querycontact',
+           'iot_hue_lightup',
+           'recommendation_locations',
+           'play_audiobook',
+           'lists_createoradd',
+           'news_query',
+           'alarm_query',
+           'iot_wemo_on',
+           'general_joke',
+           'qa_definition',
+           'social_query',
+           'music_settings',
+           'audio_volume_other',
+           'calendar_remove',
+           'iot_hue_lightdim',
+           'calendar_query',
+           'email_sendemail',
+           'iot_cleaning',
+           'audio_volume_down',
+           'play_radio',
+           'cooking_query',
+           'datetime_convert',
+           'qa_maths',
+           'iot_hue_lightoff',
+           'iot_hue_lighton',
+           'transport_query',
+           'music_likeness',
+           'email_query',
+           'play_music',
+           'audio_volume_mute',
+           'social_post',
+           'alarm_set',
+           'qa_factoid',
+           'calendar_set',
+           'play_game',
+           'alarm_remove',
+           'lists_remove',
+           'transport_taxi',
+           'recommendation_movies',
+           'iot_coffee',
+           'music_query',
+           'play_podcasts',
+           'lists_query'
+           ]
+
 ID2LABEL = {i:label for i, label in enumerate(INTENTS)}
 LABEL2ID = {label:i for i, label in enumerate(INTENTS)}
 NLU_CONFIDENCE_THRESHOLD = 0.8
-NLU_MODEL_NAME = "./nlu_model_finetuned"
+NLU_MODEL_NAME = "./massive_intent_recognition_model/checkpoint-8640"
 
 
 #- load model on device-#
@@ -89,22 +158,32 @@ except Exception as e:
     NLU_MODEL=None
 #-----------------------#
 
-SLOT_MODEL_PATH = "./slot_model_finetuned"
+SLOT_MODEL_PATH = "./massive_slot_filling_model/checkpoint-2160"
 SLOT_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-ID2TAG = {0:'0',1:'B-GENERE',2:'I-GENERE',3:'B-ARTISTA',4:'I-ARTISTA',5:'B-ANNO',6:'I-ANNO'}
+BASE_DIR = os.getcwd()
 
 try:
     SLOT_TOKENIZER = AutoTokenizer.from_pretrained(SLOT_MODEL_PATH)
+    
     SLOT_MODEL = AutoModelForTokenClassification.from_pretrained(SLOT_MODEL_PATH).to(SLOT_DEVICE)
+
+    ID2TAG = SLOT_MODEL.config.id2label 
+    
     SLOT_MODEL.eval()
-    print("Slot filler model loaded successfully")
+    print(f"Slot filler model loaded successfully. Total tags: {len(ID2TAG)}")
+
 except Exception as e:
     print(f"Error loading slot model: {e}")
-    SLOT_MODEL= None
+    SLOT_MODEL = None
 
-def extract_slots(command_text):
+
+
+#-----Extract Slots-----#
+def extract_slots(text):
     if SLOT_MODEL is None:
         return {}
+    
+    command_text = clean_command_text(text)
 
     inputs = SLOT_TOKENIZER(
         command_text,
@@ -118,56 +197,90 @@ def extract_slots(command_text):
     
     predictions = torch.argmax(outputs.logits, dim=2).squeeze().cpu().numpy()
     
+    if predictions.ndim == 0:
+        predictions = np.expand_dims(predictions, axis=0)
+        
     predicted_tags = [ID2TAG[p] for p in predictions]
-    
     word_tokens = SLOT_TOKENIZER.convert_ids_to_tokens(inputs['input_ids'].squeeze().cpu().numpy())
-    
+
     slots = {}
     current_slot_name = None
-    current_slot_value = []
-    
+    current_slot_tokens = []
+
     for token, tag in zip(word_tokens, predicted_tags):
-        if token in [SLOT_TOKENIZER.cls_token, SLOT_TOKENIZER.sep_token] or tag == 'O' or token.startswith('[PAD]'):
-            if current_slot_name and current_slot_value:
-                slots[current_slot_name.lower()] = " ".join(current_slot_value).replace(" ##", "")
-            current_slot_name = None
-            current_slot_value = []
+        if token in ['[CLS]', '[SEP]'] or token.startswith('[PAD]'):
             continue
-
-        if token.startswith('##'):
-            word_part = token[2:]
-        else:
-            word_part = token
-
+            
         tag_prefix = tag[0]
         tag_name = tag[2:]
 
-        if tag_prefix == 'B':
-            if current_slot_name and current_slot_value:
-                slots[current_slot_name.lower()] = " ".join(current_slot_value).replace(" ##", "")
+        # 🌟 PATCH (La stessa logica per correggere l'errore B- sul sub-token)
+        if current_slot_name and token.startswith('##') and tag_prefix == 'B':
+            tag_prefix = 'I'
+
+        # Logica B (Begin) e O (Outside)
+        if tag_prefix == 'B' or tag == 'O':
+            # Se stiamo chiudendo uno slot precedente, salvalo
+            if current_slot_name and current_slot_tokens:
+                # 🌟 Ricostruzione intelligente 🌟
+                raw_text = ""
+                for t in current_slot_tokens:
+                    # Aggiungi uno spazio se il token corrente NON è un sub-token
+                    if not t.startswith('##') and raw_text != "":
+                        raw_text += " "
+                    # Rimuovi ## e aggiungi il pezzo
+                    raw_text += t.replace("##", "")
+                    
+                slots[current_slot_name.lower()] = raw_text.strip()
+                
+            current_slot_name = None
+            current_slot_tokens = []
             
-            current_slot_name = tag_name
-            current_slot_value = [word_part]
-            
+            # Se il tag corrente è B, iniziamo un nuovo slot
+            if tag_prefix == 'B':
+                current_slot_name = tag_name
+                current_slot_tokens = [token]
+
+        # Logica I (Intermediate)
         elif tag_prefix == 'I':
             if tag_name == current_slot_name:
-                current_slot_value.append(word_part)
+                current_slot_tokens.append(token)
             else:
-                pass
+                # Caso I-errato: Chiude lo slot precedente e riazzera
+                if current_slot_name and current_slot_tokens:
+                    raw_text = ""
+                    for t in current_slot_tokens:
+                        if not t.startswith('##') and raw_text != "":
+                            raw_text += " "
+                        raw_text += t.replace("##", "")
+                    
+                    slots[current_slot_name.lower()] = raw_text.strip()
+                    current_slot_name = None
+                    current_slot_tokens = []
 
-    if current_slot_name and current_slot_value:
-        slots[current_slot_name.lower()] = " ".join(current_slot_value).replace(" ##", "")
+    # Salva l'ultimo slot
+    if current_slot_name and current_slot_tokens:
+        raw_text = ""
+        for t in current_slot_tokens:
+            if not t.startswith('##') and raw_text != "":
+                raw_text += " "
+            raw_text += t.replace("##", "")
+        
+        slots[current_slot_name.lower()] = raw_text.strip()
 
     return slots
+#--------------------#
 
 
 #---classify stt text---#
-def classify_intent(text_command):
+def classify_intent(text):
+
+    text_command = clean_command_text(text) 
 
     if NLU_MODEL is None or not text_command:
-        return "unrecognized",0.0
+        return "unrecognized", 0.0
     
-    inputs = NLU_TOKENIZER(text_command, return_tensors="pt",truncation=True,padding=True).to(NLU_DEVICE)
+    inputs = NLU_TOKENIZER(text_command, return_tensors="pt", truncation=True, padding=True).to(NLU_DEVICE) 
 
     with torch.no_grad():
         outputs = NLU_MODEL(**inputs)
@@ -175,12 +288,19 @@ def classify_intent(text_command):
     probabilities = outputs.logits.softmax(dim=-1).max().item()
     predicted_class_id = outputs.logits.argmax().item()
     
-    intent = ID2LABEL.get(predicted_class_id, "unrecognized")   
+    intent = ID2LABEL.get(predicted_class_id, "unrecognized") 
     
     if probabilities < NLU_CONFIDENCE_THRESHOLD:
         intent = "unrecognized"
-    return intent,probabilities
+        
+    return intent, probabilities
 #-----------------------#
+
+
+
+
+
+
 
 
 
@@ -212,7 +332,7 @@ def process_audio():
             print(f"Intent:{intent}, confidence:{confidence:.2f}")
             status_code = 'ok'
             tts_response = f"Command: {command_text}"
-            if intent == 'riproduci_musica':
+            if intent != 'unrecognized':
                 slots = extract_slots(command_text)
                 print(slots)
     finally:
@@ -227,8 +347,27 @@ def process_audio():
 #-----------------------#
 
 
-@app.route('/',methods=['GET'])
-def greet():
-    return jsonify({'status':'ok','message':'all good'}),200
 
+@app.route('/test',methods=['GET'])
+def test():
+    commands = [
+        "play Bohemian Rhapsody",
+        "Let me hear Rock music",
+        "What is the weather is Paris?",
+        "Put an alarm for tomorrow ad 9 am",
+        "Tell me a good comic movie"
+    ]
 
+    for command in commands:
+        intent,confidence = classify_intent(command)
+        print(command)
+        print(f"Intent:{intent}, confidence:{confidence:.2f}")
+        status_code = 'ok'
+        tts_response = f"Command: {command}"
+        if intent != 'unrecognized':
+            slots = extract_slots(command)
+            print(slots)
+
+    return jsonify({
+        "status":'ok'
+    }),200

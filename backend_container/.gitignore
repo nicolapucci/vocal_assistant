@@ -1,5 +1,11 @@
-**/nlu_model_finetuned/
-**/slot_model_finetuned/
+**/massive_slot_filling_model/
+**/massive_intent_recognition_model/
 **/.venv/
 **/__pycache__/
-**/vosk-model-it
+**/vosk-model-it/
+**/vosk-model-en/
+**/test/
+**/train/
+**/validation/
+**/logs_intent/
+

@@ -4,7 +4,6 @@ import numpy as np
 import pvporcupine
 import pyaudio
 import wave
-import time
 import requests
 
 load_dotenv()
