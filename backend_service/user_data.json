@@ -1,0 +1,13 @@
+{
+    "nicola_home": {
+        "name": "nicola_home",
+        "apps": {
+            "spotify": {
+                "access_token": "BQDRdoTgrv1INOPM63P-Qj3Xw8obyhzappbwFbJnr1GiAQXEJ-2O06viwzLapApcQJPbeD__sLtx_1OlEkm3263C4jfN4B6OC_oiu_Mrq0IRTs18S73-34bBkCPQmivQboFqtBlIOMTF5F3ZLgZ0p97c8rHfGykhh5BkMTGkl-tgPr1n73mFJJFfWO2z8B4K9azvFQYotpvElQdf29-PbUF2BoJRIvG161h_lMNkYO5h50_opLFNsfOvCmCqZQ",
+                "refresh_token": "AQA-ACCdaQDYcoHYTjzstMaYR2gg4vkwrcWRWozBN7KL700PNnjtznsWf6ws-2GUGQ-Vp8HnWhNH3gpOwDfpajBtoPTjrGXFzxfbSPBBk2QfZW-YkvR8jNZ_teoLxjxn-a8",
+                "scope": "playlist-read-private user-modify-playback-state user-read-playback-state user-read-private",
+                "expires_in": 3600
+            }
+        }
+    }
+}

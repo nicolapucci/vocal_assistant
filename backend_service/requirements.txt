@@ -1,0 +1,6 @@
+flask
+dotenv
+requests
+redis
+psycopg2-binary
+SQLAlchemy

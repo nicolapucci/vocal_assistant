@@ -3,8 +3,12 @@ import os
 import numpy as np
 import pvporcupine
 import pyaudio
+import pygame
 import wave
 import requests
+import base64
+import uuid
+
 
 load_dotenv()
 
@@ -71,6 +75,27 @@ def record_user_command(audio_interface,stream):
     return WAVE_OUTPUT_FILENAME
 #-----------------------------------------------------#
 
+#-----------------------------------------------------#
+def play_audio(audio_bytes):
+    tmp_filename = str(uuid.uuid4())+'.wav'
+    try:
+        with open(tmp_filename,'wb') as f:
+            f.write(audio_bytes)
+        pygame.mixer.init()
+        pygame.mixer.music.load(tmp_filename)
+        pygame.mixer.music.play()
+
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(1)
+        pygame.mixer.music.unload()
+    except Exception as e:
+        print (f"Errore di riproduzione: {e}")
+    finally:
+        if os.path.exists(tmp_filename):
+            print('trying to remove file')
+            os.remove(tmp_filename)
+            print('file removed')
+#-----------------------------------------------------#
 
 #------------- Sending Audio to Backend --------------#
 def send_audio_to_backend(filepath):
@@ -79,15 +104,12 @@ def send_audio_to_backend(filepath):
         with open(filepath,'rb') as f:
             files = {'audio_file':(filepath,f,'audio/wav')}
 
-            response = requests.post(BACKEND_URL,files=files)
+            response = requests.post(f"{BACKEND_URL}process_audio",files=files)
 
-            if response.status_code == 200:
-                print ("Request submitted successfully")
-                return response.json().get('tts_response','No audio response from backend')
-            else:
-                print (f"Error posting data. Status Code:{response.status_code}")
-                print(f"Details: {response.text}")
-                return None
+
+            print ("Request submitted successfully")
+            return response.json()
+
     except requests.exceptions.ConnectionError:
         print (f"Connection Error. Unable top reach backend at {BACKEND_URL}")
         return None
@@ -110,15 +132,26 @@ while True:
             backend_response = send_audio_to_backend(recorded_file)
 
             if backend_response:
-                print(f"Response Received: {backend_response}")
-                
+                if backend_response['content']:
+                    audio_bytes = base64.b64decode(backend_response['content'].encode('utf-8'))
+
+                    play_audio(audio_bytes)
+
+                    if 'id' in backend_response:
+                        id = backend_response['id']
+                        response = requests.post(f"{BACKEND_URL}play",json={'id':id})
+                        data = response.json()
+                        if not data['success']:
+                            audio_bytes = base64.b64decode(data['content'].encode('utf-8'))
+                            play_audio(audio_bytes)
+
                 print("Listening...")
     except KeyboardInterrupt:
         print("Closing program...")
         break
     except Exception as e:
         print(f"Critical error: {e}")
-        break
+        
 #-----------------------------------------------------#
 
 

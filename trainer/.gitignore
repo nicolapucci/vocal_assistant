@@ -1,0 +1,6 @@
+**/parquet/**
+**/model-artifacts/**
+custom_corrections.csv
+**/.venv/**
+**/__pycache__/**
+**/training-logs/**

@@ -1,0 +1,44 @@
+services:
+
+  session_db:
+    image: redis:7.2-alpine
+    container_name: redis_db
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend_service
+    container_name: backend_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    env_file:
+      - ./backend_service/.env
+    environment:
+      REDIS_HOST: session_db
+      REDIS_PORT: 6379
+
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres_db:5432/${DB_NAME}
+
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+    depends_on:
+      - session_db
+      - postgres_db
+volumes:
+  redis_data:
+  postgres_data:
