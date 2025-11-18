@@ -150,7 +150,26 @@ class SpotifyClient:
         except Exception as e:
             print(f"ERRORE! C'è stato un errore nella chiamata")
 
-
+    def generate_radio(user:User,uris:list):
+        url=https://api.spotify.com/v1/reccomendations
+        
+        def build_header(token:str):
+            return {Authorization: f'Bearer {token}'}
+        
+        try:
+            response = self.authHandler.apiPrivate(
+                user=user,
+                build_header=build_header,
+                url=url,
+                method='PUT',
+                app='spotify',
+                refresh_call=self.refresh_spotify_access_token,
+                json_body={uris}
+            )
+            
+            response.raise_for_status()
+            
+            
 #---------------------------
 #     PLAY SPOTIFY
 #---------------------------
