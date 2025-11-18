@@ -145,10 +145,12 @@ class SpotifyClient:
                 method='GET',
                 app='spotify',
                 refresh_call=self.refresh_spotify_access_token
-            )    
+            )
+            response.raise_for_status()
             return response
         except Exception as e:
             print(f"ERRORE! C'è stato un errore nella chiamata")
+            return response
 
     def generate_radio(user:User,uris:list):
         url=https://api.spotify.com/v1/reccomendations
@@ -168,6 +170,10 @@ class SpotifyClient:
             )
             
             response.raise_for_status()
+            return response
+        except Exception as e:
+            print(f"Errore nella raccolta dei dati: {e}")
+            return None
             
             
 #---------------------------
