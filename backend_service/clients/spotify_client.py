@@ -147,30 +147,49 @@ class SpotifyClient:
                 refresh_call=self.refresh_spotify_access_token
             )
             response.raise_for_status()
-            return response
+            if 'tracks' in response:
+                return response.tracks
+            return None
         except Exception as e:
             print(f"ERRORE! C'è stato un errore nella chiamata")
-            return response
+            return None
 
-    def generate_radio(user:User,uris:list):
+    def generate_radio(user:User,uris:list, uris_category:str):
         url=https://api.spotify.com/v1/reccomendations
         
+        
+        if len(uris) == 0:
+            return None
+        elif len(uris) > 5:
+            uris = uris[:5]
+            
+        params = {'limit':50}
+        if uris_category == 'artists':
+            params['seed_artists']=uris
+        elif uris_category == 'genres':
+            params['seed_genres'] = uris
+        else: #fallback, if it doesn't match all the other categories with tracks
+            params['seed_tracks'] = uris
+            
+            
         def build_header(token:str):
-            return {Authorization: f'Bearer {token}'}
+            return {'Authorization': f'Bearer {token}'}
         
         try:
             response = self.authHandler.apiPrivate(
                 user=user,
                 build_header=build_header,
                 url=url,
-                method='PUT',
+                method='GET',
                 app='spotify',
                 refresh_call=self.refresh_spotify_access_token,
-                json_body={uris}
+                params=params
             )
             
             response.raise_for_status()
-            return response
+            if 'tracks' in response:
+                return response.tracks
+            return None
         except Exception as e:
             print(f"Errore nella raccolta dei dati: {e}")
             return None
