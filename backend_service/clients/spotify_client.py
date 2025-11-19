@@ -198,7 +198,7 @@ class SpotifyClient:
 #---------------------------
 #     PLAY SPOTIFY
 #---------------------------
-    def play_track(self,user,track_uri):
+    def play(self,user,uris:list=None,context_uri:str=None):
         
         devices = self.map_devices(user)
             
@@ -227,9 +227,13 @@ class SpotifyClient:
                     'Content-Type':'application/json'
                     }
         json_body={
-                'uris':[track_uri],
                 'position_ms':0,
             }
+        if uris is not None and len(uris)>0:
+            json_body['uris']=uris
+        elif context_uri is not None:
+            json_body['context_uri']=context_uri
+
         try:
             response = self.authHandler.apiPrivate(
                 user=user,
@@ -240,11 +244,12 @@ class SpotifyClient:
                 app='spotify',
                 refresh_call=self.refresh_spotify_access_token
             )
-            return response
+            response.raise_for_status()
+            
+            return True #tmo flag
         except Exception as e:
             print(f"ERRORE! C'è stato un errore nella chiamata")
-        raise Exception #tmp flag
-
+        return Flase #tmp flag
 
 
 
@@ -256,19 +261,19 @@ class SpotifyClient:
 
         def build_header(token):
             return {'Authorization': f"Bearer {token}"}
-        
-        response = self.authHandler.apiPrivate(
-            user=user,
-            build_header=build_header,
-            url=url,
-            method='GET',
-            refresh_call=self.refresh_spotify_access_token,
-            app='spotify'
-        )
-
-        devices = response['devices']
-
-        for device in devices:
-            print(f"name:{device['name']}--id:{device['id']}--status:{device['is_active']}")
-
-        return devices
+        try:
+            response = self.authHandler.apiPrivate(
+                user=user,
+                build_header=build_header,
+                url=url,
+                method='GET',
+                refresh_call=self.refresh_spotify_access_token,
+                app='spotify'
+            )
+            response.raise_for_status()
+            if 'devices' in response:
+                devices = response['devices']
+                return devices
+        except Exception as e:
+            print(f"Error fetching devices data: {e}")
+        return False #tmp flag
