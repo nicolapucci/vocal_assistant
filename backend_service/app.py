@@ -266,7 +266,7 @@ def play():
     user = device.user#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
     if session is not None:
         try:
-            spotfy_client.play_track(user=user,track_uri=session['uris'])#ignora il device per ora
+            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'])#ignora il device per ora
             return jsonify({'success':True})
         except Exception as e:
             audio_response = speechProcessor.tts(f'Errore nell\'avvio della riproduzione. : {e}')
