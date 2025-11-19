@@ -234,8 +234,7 @@ class SpotifyClient:
         elif context_uri is not None:
             json_body['context_uri']=context_uri
 
-        try:
-            response = self.authHandler.apiPrivate(
+        response = self.authHandler.apiPrivate(
                 user=user,
                 build_header=build_header,
                 url=url,
@@ -244,12 +243,9 @@ class SpotifyClient:
                 app='spotify',
                 refresh_call=self.refresh_spotify_access_token
             )
-            response.raise_for_status()
+        response.raise_for_status()
             
-            return True #tmo flag
-        except Exception as e:
-            print(f"ERRORE! C'è stato un errore nella chiamata")
-        return Flase #tmp flag
+        return #tmp flag
 
 
 
