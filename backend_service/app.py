@@ -232,7 +232,7 @@ def process_audio():
             audio_response = speechProcessor.tts(response['message'])
             return jsonify({'content':audio_response}),404#tts
         
-        track = response['tracks']['items'][0] if 'tracks' in response and 'items' in response['tracks'] else None
+        track = response['items'][0] if 'items' in response['tracks'] else None
 
         if track is not None:
             track_uri = track['uri'] if track else None

@@ -154,8 +154,9 @@ class SpotifyClient:
             print(f"ERRORE! C'è stato un errore nella chiamata")
             return None
 
-    def generate_radio(user:User,uris:list, uris_category:str):
-        url=https://api.spotify.com/v1/reccomendations
+
+    def generate_radio(self,user,uris:list, uris_category:str):
+        url='https://api.spotify.com/v1/reccomendations'
         
         
         if len(uris) == 0:
