@@ -188,6 +188,7 @@ def callback():
     <pre>Refresh Token salvato: {refresh_token[:10]}...</pre>
     """
 
+
 @device_endpoint
 @app.route('/process_audio',methods=['POST'])#il mio edge device manda qui l'audio registrato
 def process_audio():
@@ -243,20 +244,62 @@ def process_audio():
     if intent in PLAY_MUSIC_INTENTS:
 
         response = spotfy_client.search_spotify_library(user,slots)
-        
-        track = response['items'][0] if response and 'items' in response and response['items'] else None
+        if response is None:
+            audio_response = speechProcessor.tts(response['message'])
+            return jsonify({'content':audio_response}),404#tts
 
-        if track is not None:
-            track_uri = track['uri'] if track else None
-            track_name =track['name'] if track else None
 
-            session_id = redis_manager.save_session_state({'uris':track_uri,'device_id':device_id})
-            audio_response = speechProcessor.tts(f"Riproduco {track_name}")
+        if 'tracks' in response and 'items' in response['tracks']: #essendo una struttura if/else si fermerà solo al primo match. rivedere la priorità.
+            type = 'tracks'
+        elif 'artists' in response and 'items' in response['artists']:
+            type = 'artists'
+        elif 'albums' in response and 'items' in response['albums']:
+            type = 'albums'
+        elif 'playlists' in response and 'items' in response['playlists']:
+            type = 'playlists'
         else:
-            session_id = redis_manager.save_session_state({'uris':None,'device_id':device_id})
-            audio_response = speechProcessor.tts(f"Riproduco Spotify")
-        
-        return jsonify({ 'content':audio_response, 'id':session_id}),200        
+            type = None
+
+        if type is not None:
+            items = response['items']#do per scontato che se items è presente sia un array, forse voglio aaiungere un check qua
+        else:
+            items = None
+
+        #inizializzo tutto a None, se nessuno di questi viene cambiato allora la return sarà 'Riproduco Spotify' e la play ha un modo suo per gestire questo caso
+        context_uri = None
+        item_name = None
+        uris = None
+
+        if type in ['tracks','artists']: #costruisco la radio partendo da i primi 5 elementi della risposta (potrei scegliere di usarne solo 1)
+
+            items = items[:5]
+
+            seed_item = items[0] #the best match for the research, i use this to start the radio.
+            item_name = seed_item['name']
+
+            ids =  []
+
+            for item in items:
+                ids.append(item['id'])
+
+            uris = spotfy_client.generate_radio(user=user,ids=ids,category=type)
+
+            if uris is not None:
+                uris.insert(0,item_name)
+
+
+        elif type is not None:
+            item = items[type][0]
+            context_uri = item['uri']
+            item_name = item['name']
+
+
+        spotify_device = slots['device'] if 'device' in slots else device#se non è specificato uso chi ha fatto la richiesta
+
+        session_id = redis_manager.save_session_state({'uris':uris,'context_uri':context_uri,'device':spotify_device.name})
+
+        audio_response = speechProcessor.tts(f"Riproduco {item_name if item_name is not None else 'Spotify'}")
+        return jsonify({ 'content':audio_response, 'id':session_id}),200#tts    
 
     elif intent == 'unknown':
         audio_response = speechProcessor.tts('Non ho capito.')
@@ -264,6 +307,8 @@ def process_audio():
     else:
         audio_response = speechProcessor.tts("Quell'azione non è ancora supportata")
         return jsonify({'content':audio_response}),400
+    
+
     
 @device_endpoint
 @app.route('/play',methods=['POST'])
@@ -285,8 +330,8 @@ def play():
     user = device.user#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
     if session is not None:
         try:
-            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'],device=device)
-            return jsonify({'success':True})
+            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'],device_name=session['device'])#ignora il device per ora
+            return jsonify({'success':True})#niente tts se ha successo.
         except Exception as e:
             audio_response = speechProcessor.tts(f'Errore nell\'avvio della riproduzione. : {e}')
             return jsonify({'success':False,'content': audio_response}), 500

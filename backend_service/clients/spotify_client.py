@@ -157,18 +157,17 @@ class SpotifyClient:
                 app='spotify',
                 refresh_call=self.refresh_spotify_access_token
             )
-
-            if 'tracks' in response:
-                return response['tracks']
-            return None
+            response.raise_for_status()
+        
+            return response
         
         except Exception as e:
             print(f"ERRORE! C'è stato un errore nella chiamata")
             return None
 
 
-    def generate_radio(self,user,uris:list, uris_category:str):
-        url='https://api.spotify.com/v1/recommendations'
+    def generate_radio(self,user,ids:list, category:str):
+        url='https://api.spotify.com/v1/reccomendations'
         
         
         if len(uris) == 0:
@@ -177,12 +176,16 @@ class SpotifyClient:
             uris = uris[:5]
             
         params = {'limit':50}
-        if uris_category == 'artists':
-            params['seed_artists']=uris
-        elif uris_category == 'genres':
-            params['seed_genres'] = uris
+        if category == 'artists':
+            params['seed_artists']=ids
+        elif category == 'genres':
+            params['seed_genres'] = ids
         else: #fallback, if it doesn't match all the other categories with tracks
-            params['seed_tracks'] = uris
+            params['seed_tracks'] = ids
+            
+            
+        def build_header(token:str):
+            return {'Authorization': f'Bearer {token}'}
         
         try:
             response = self.authHandler.apiPrivate(
@@ -194,13 +197,18 @@ class SpotifyClient:
                 refresh_call=self.refresh_spotify_access_token,
                 params=params
             )
+            
+            response.raise_for_status()
+            
+            tracks = response['tracks'] if 'tracks' in response else None
 
-            if 'tracks' in response:
-                uris = []
-                for track in response['tracks']:
-                    uris.append(track.uri)
-                return uris
-            return None
+            uris = []
+
+            if tracks is not None: #i only return the uris.
+                for track in tracks:
+                    uris.append(track['uri'])
+
+            return uris
         except Exception as e:
             print(f"Errore nella raccolta dei dati: {e}")
             return None
@@ -209,34 +217,38 @@ class SpotifyClient:
 #---------------------------
 #     PLAY SPOTIFY
 #---------------------------
-    def play(self,user,uris:list=None,context_uri:str=None,device:Device= None):
+    def play(self,user,uris:list=None,context_uri:str=None,device_name:str=None):
         
-        devices_spotify = self.map_devices(user)
-        
-        default_device_name = 'DESKTOP-TF5OKBM'
-        device_to_use_api = None
+        devices = self.map_devices(user)
+            
+        default_device = device_name if device_name is not None else 'DESKTOP-TF5OKBM'
 
-        if device is not None:
-            for d in devices_spotify:
-                if hasattr(device, 'device_token') and device.device_token == d['id']:
-                    device_to_use_api = d 
-                    break
-        
-        if device_to_use_api is None:
-            for d in devices_spotify:
-                if d['name'] == default_device_name:
-                    device_to_use_api = d
-                    break
-        
-        if device_to_use_api is None:
-            raise Exception("Nessun dispositivo Spotify attivo o predefinito trovato.")
-        
-        url = f'https://api.spotify.com/v1/me/player/play'
+        device_to_use = None
+
+        #for param in search_params:
+            #if 'device_type' in param.keys():#if device is specified use the specified device
+                #for device in devices:             
+                    #if device['name']==search_params['device_type']:
+                        #device_to_use = device
+                    
+        for device in devices:
+            if device['name']==default_device:
+                device_to_use=device
+                
+        param_device = f'device_id={device_to_use["id"]}' if device_to_use is not None else ''
 
         params = {
             "device_id":device_to_use_api['id']
         }
 
+        url = f'https://api.spotify.com/v1/me/player/play?{param_device}'
+
+
+
+        def build_header(token):
+            return {'Authorization': f"Bearer {token}",
+                    'Content-Type':'application/json'
+                    }
         json_body={
                 'position_ms':0,
             }
@@ -244,20 +256,8 @@ class SpotifyClient:
             json_body['uris']=uris
         elif context_uri is not None:
             json_body['context_uri']=context_uri
-        try:
-            self.authHandler.apiPrivate(
-                    user=user,
-                    build_header=self.build_header_token_content,
-                    url=url,
-                    json_body=json_body,
-                    params=params,
-                    method='PUT',
-                    app='spotify',
-                    refresh_call=self.refresh_spotify_access_token
-                )
-            return True #apiPrivate uses response.raise_for_status() and spotify only returns the status code
-        except Exception as e:
-            return False
+        else:
+            json_body = None #Controllare cosa succede se spotify non è in riproduzione e/o non ha una coda di riproduzione.
 
 
 
