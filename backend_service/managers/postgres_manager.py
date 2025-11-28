@@ -64,9 +64,23 @@ class PostgresManager:
             return device
         except Exception as e:
             print(f"Errore nell'esecuzione della query: {e}")
+            return None
         finally:
             session.close()
 
+    def get_device_by_name(self,name:str)-> Optional[dict[str,any]]:
+        session = self._get_session()
+        try:
+            device:Device = session.query(Device).filted(Device.name==name).one_or_none()
+
+            if not device:
+                return None
+            return device
+        except Exception as e:
+            print(f"Errore nell'esecuzione della query: {e}")
+            return None
+        finally:
+            session.close()
 
     def update_app_access_token(self,user:User,updates:dict,app_name:str):
         session = self._get_session()

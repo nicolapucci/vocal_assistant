@@ -35,6 +35,13 @@ app.config['UPLOAD_FOLDER']= UPLOAD_FOLDER
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+PLAY_MUSIC_INTENTS = [
+    'play_music',
+    'play_radio',
+    'play_podcast',
+    'play_audiobook'
+]
+
 
 #----Interfaccia di comunicazione con i modelli stt tts e nlu----#
 class SpeechProcessor:
@@ -212,39 +219,44 @@ def process_audio():
             result = speechProcessor.stt(filepath)
                  
             print(f"Result: {result}")
+
             text_input =result
 
         except Exception as e:#questo viene triggerato
             print(f"Eccezione: {e}")
             audio_response = speechProcessor.tts("Eccezione")
             return jsonify({"content": audio_response}), 500
+        
         finally:
             os.remove(filepath)
 
     intent, slots = nluProcessor.process_text(text_input)
 
+    device_id = None
+    if 'device_type' in slots:
+        device = postgres_manager.get_device_by_name(name=slots['device_type'])
+        if device is not None:
+            device_id = device.id
+
     print(f"message_tanslation: {text_input}--intent: {intent}--slots:{slots}")
 
-    if intent == 'play_music':
+    if intent in PLAY_MUSIC_INTENTS:
 
         response = spotfy_client.search_spotify_library(user,slots)
-        if 'error' in response:
-            audio_response = speechProcessor.tts(response['message'])
-            return jsonify({'content':audio_response}),404#tts
         
-        track = response['items'][0] if 'items' in response['tracks'] else None
+        track = response['items'][0] if response and 'items' in response and response['items'] else None
 
         if track is not None:
             track_uri = track['uri'] if track else None
             track_name =track['name'] if track else None
 
-            session_id = redis_manager.save_session_state({'uris':track_uri})
-
+            session_id = redis_manager.save_session_state({'uris':track_uri,'device_id':device_id})
             audio_response = speechProcessor.tts(f"Riproduco {track_name}")
-            return jsonify({ 'content':audio_response, 'id':session_id}),200#tts   
         else:
-            audio_response = speechProcessor.tts(f"Non ho trovato canzoni con titolo {track_name}")
-            return jsonify({'content':audio_response}),404#? kinda si e kinda no non ha trovato corrispondenza su spotify        
+            session_id = redis_manager.save_session_state({'uris':None,'device_id':device_id})
+            audio_response = speechProcessor.tts(f"Riproduco Spotify")
+        
+        return jsonify({ 'content':audio_response, 'id':session_id}),200        
 
     elif intent == 'unknown':
         audio_response = speechProcessor.tts('Non ho capito.')
@@ -262,11 +274,18 @@ def play():
         return jsonify({'content':audio_response}),400
     id = data['id']
     session = redis_manager.pop_session(session_id=id)
-    device = g.device
+
+    device = None
+    if session['device_id']:
+        device = postgres_manager.get_device_by_id(session['device_id'])
+
+    if device is None:#se l'user non specifica il device, o il device specificato non è stato trovato usa ik device che ha fatto la request
+        device = g.device
+
     user = device.user#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
     if session is not None:
         try:
-            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'])#ignora il device per ora
+            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'],device=device)
             return jsonify({'success':True})
         except Exception as e:
             audio_response = speechProcessor.tts(f'Errore nell\'avvio della riproduzione. : {e}')
