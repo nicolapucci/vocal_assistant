@@ -285,7 +285,7 @@ def process_audio():
                     target=lastFm_manager.refill_spotify_queue,
                     args=(user,item_name,main_artist)#<-- i need to populate queue only in case the user specified a track, in the other scenarios spotify will handle the queue
                 )
-                refill_thread.run()
+                refill_thread.start()
             else:
                 context_uri = item['uri']
 

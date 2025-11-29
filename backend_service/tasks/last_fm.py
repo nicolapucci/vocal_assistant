@@ -12,7 +12,7 @@ from clients.spotify_client import SpotifyClient
 
 LAST_FM_URL = 'https://ws.audioscrobbler.com/2.0/'
 API_KEY = os.getenv('LAST_FM_KEY')
-DELAY_SECONDS = 2
+DELAY_SECONDS = 5
 
 def normalize_track_name(name: str) -> str:
     name = re.sub(r'\s*\(.*\)', '', name)
