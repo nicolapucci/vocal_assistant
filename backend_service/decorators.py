@@ -25,7 +25,7 @@ def device_endpoint(f:Callable)-> Callable:
                     'message':'Token non valido',
                     'status':401
                 }),401
-            if device.user is None:
+            if device.user_id is None:
                 return jsonify({
                     'message':'Token non valido',
                     'status':403
@@ -36,6 +36,7 @@ def device_endpoint(f:Callable)-> Callable:
                 'status':500
             }),500
 
+        print(f"DEBUG DECORATORE: Setto g.device per {device.id}. Proseguo con la view.")
         g.device = device
 
         return f(*args,**kwargs)

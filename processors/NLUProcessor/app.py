@@ -141,6 +141,7 @@ def extract_intent_and_slots():
         if text:
             print(f"input: {text}")
             intent,slots = nlu_processor.process_text(text)
+            print(f"slots:{slots}")
         return jsonify({'ok':True,'content':{'slots':slots,'intent':intent}})
     except Exception:
         return jsonify({'ok':False,'content':"C'è stato un errore"})

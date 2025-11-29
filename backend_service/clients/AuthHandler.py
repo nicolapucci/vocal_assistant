@@ -13,14 +13,10 @@ postgres_manager = initialize_postgres_manager()
 class AuthHandler:
 
 
-    def refresh_token(self,user:User, app_name:str, build_refresh_call:function):#so multiple modules can use this func, and when there will be a database only this will change and the clients will work fine
+    def refresh_token(self,user:User, app_name:str, build_refresh_call:callable):#so multiple modules can use this func, and when there will be a database only this will change and the clients will work fine
 
-        app_setting = getattr(user,f'{app_name}_setting',None)
-        if not app_setting or not hasattr(app_setting,'refresh_token'):
-            print(f"Errore: AppSetting '{app_name}' non trovato, non accoppiato o non supporta i refresh_token.")
-            return None
         
-        refresh_token = app_setting.refresh_token
+        refresh_token = postgres_manager.get_app_refresh_token(user_id=user.id,app_name=app_name)
 
         try:
             url,headers,data = build_refresh_call(refresh_token)
@@ -44,6 +40,7 @@ class AuthHandler:
                 'access_token':new_access_token,
                 'refresh_token':new_refresh_token
             }
+
             success = postgres_manager.update_app_access_token(
                 user=user,
                 updates=updates,
@@ -56,17 +53,18 @@ class AuthHandler:
 
     def apiPrivate(self,
                    user,
-                   build_header:function,
+                   build_header:callable,
                    url:str,
                    method:str,
                    app:str,
-                   refresh_call:function,
+                   refresh_call:callable,
                    json_body=None,
                    params=None
                    ):
         
         
-        access_token = user[app].access_token
+        access_token = postgres_manager.get_app_access_token(user_id=user.id,app_name=app)
+
         if not access_token:
             return False#tmp debug handling
         
@@ -88,8 +86,7 @@ class AuthHandler:
             is_access_token_refreshed = refresh_call(user)
             if is_access_token_refreshed:
 
-                app_setting = getattr(user,f'{app}_setting')
-                access_token = app_setting.access_token
+                access_token = postgres_manager.get_app_access_token(user_id=user.id,app_name=app)
 
                 header = build_header(access_token)#rebuild a header with new access_token
 
@@ -97,7 +94,10 @@ class AuthHandler:
 
                 response.raise_for_status()
 
-                return response.json()
+                if response.content:
+                    return response.json()
+                else:
+                    return response.status_code
             raise Exception #tmp flag
         else:
             response.raise_for_status()#i do it now because i want to check if it's a 401 before throwing an exception

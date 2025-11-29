@@ -48,7 +48,7 @@ class SpeechProcessor:
             return {'text':f"Error during STT elaboration with Whisper: {e}"}
         
     def tts(self,string:str):
-        SAMPLE_VOICE_PATH = cwd / 'sample.wav'
+        SAMPLE_VOICE_PATH = cwd / 'sample.mp3'
         output_filename = 'output_tts.wav'
         output_filepath = tmp / output_filename
 

@@ -7,18 +7,23 @@ from flask import (
     jsonify,
     g
 )
+import logging
 import requests
 from clients.AuthHandler import AuthHandler
 import json
 import uuid
+import threading
 
 from clients.spotify_client import SpotifyClient
 from managers.redis_manager import initialize_redis_manager
 from managers.postgres_manager import initialize_postgres_manager
 from decorators import device_endpoint
+from tasks.last_fm import LastFm
 
 app = Flask(__name__)
 cwd = os.path.dirname(os.path.abspath(__file__))
+
+app.logger.setLevel(logging.DEBUG)
 
 load_dotenv()
 
@@ -26,7 +31,7 @@ SCOPE = os.getenv('SCOPE')
 
 SESSION_STORAGE = {}
 
-BASE_URL = 'http://127.0.0.1'
+BASE_URL = 'http://host.docker.internal'
 
 
 
@@ -114,6 +119,8 @@ authHandler = AuthHandler()
 #----------------------------Managers----------------------------#
 redis_manager = initialize_redis_manager()
 postgres_manager = initialize_postgres_manager()
+
+lastFm_manager = LastFm()
 #----------------------------------------------------------------#
 
 
@@ -189,22 +196,26 @@ def callback():
     """
 
 
-@device_endpoint
+
 @app.route('/process_audio',methods=['POST'])#il mio edge device manda qui l'audio registrato
+@device_endpoint
 def process_audio():
+    
+    device = g.__getattr__('device')
 
-    device = g.device
 
-    user = device.user#ora il decorator mi garantisce che device.user esista
+    user = postgres_manager.get_device_owner(device_id=device.id)
 
     if 'audio_file' not in request.files:
-        audio_response = speechProcessor.tts("audio_file_missing")
+        audio_response = "audio file missing"
+        print('no file')
         return jsonify({"content":audio_response}), 400
 
     audio_file = request.files['audio_file']
     
     if audio_file.filename == '':
-        audio_response = speechProcessor.tts("audio_filename_\"\"")
+        print('no filename')
+        audio_response = speechProcessor.tts("audio filename missing")
         return jsonify({"content":audio_response}), 400
     
     if audio_file:
@@ -223,7 +234,7 @@ def process_audio():
 
             text_input =result
 
-        except Exception as e:#questo viene triggerato
+        except Exception as e:
             print(f"Eccezione: {e}")
             audio_response = speechProcessor.tts("Eccezione")
             return jsonify({"content": audio_response}), 500
@@ -233,70 +244,50 @@ def process_audio():
 
     intent, slots = nluProcessor.process_text(text_input)
 
-    device_id = None
-    if 'device_type' in slots:
-        device = postgres_manager.get_device_by_name(name=slots['device_type'])
-        if device is not None:
-            device_id = device.id
 
-    print(f"message_tanslation: {text_input}--intent: {intent}--slots:{slots}")
+    app.logger.info(f"message_tanslation: {text_input}--intent: {intent}--slots:{slots}")
 
     if intent in PLAY_MUSIC_INTENTS:
 
-        response = spotfy_client.search_spotify_library(user,slots)
-        if response is None:
-            audio_response = speechProcessor.tts(response['message'])
-            return jsonify({'content':audio_response}),404#tts
+        response = spotfy_client.search_spotify_library(user,slots)      
 
+        app.logger.info(f"response: {response}")   
 
-        if 'tracks' in response and 'items' in response['tracks']: #essendo una struttura if/else si fermerà solo al primo match. rivedere la priorità.
+        if response and 'tracks' in response and 'items' in response['tracks']: #essendo una struttura if/else si fermerà solo al primo match. rivedere la priorità.
             type = 'tracks'
-        elif 'artists' in response and 'items' in response['artists']:
+        elif response and 'artists' in response and 'items' in response['artists']:
             type = 'artists'
-        elif 'albums' in response and 'items' in response['albums']:
+        elif response and 'albums' in response and 'items' in response['albums']:
             type = 'albums'
-        elif 'playlists' in response and 'items' in response['playlists']:
+        elif response and 'playlists' in response and 'items' in response['playlists']:
             type = 'playlists'
         else:
             type = None
 
         if type is not None:
-            items = response['items']#do per scontato che se items è presente sia un array, forse voglio aaiungere un check qua
+            items = response[type]['items']#do per scontato che se items è presente sia un array, forse voglio aaiungere un check qua
         else:
             items = None
 
         #inizializzo tutto a None, se nessuno di questi viene cambiato allora la return sarà 'Riproduco Spotify' e la play ha un modo suo per gestire questo caso
         context_uri = None
         item_name = None
-        uris = None
-
-        if type in ['tracks','artists']: #costruisco la radio partendo da i primi 5 elementi della risposta (potrei scegliere di usarne solo 1)
-
-            items = items[:5]
-
-            seed_item = items[0] #the best match for the research, i use this to start the radio.
-            item_name = seed_item['name']
-
-            ids =  []
-
-            for item in items:
-                ids.append(item['id'])
-
-            uris = spotfy_client.generate_radio(user=user,ids=ids,category=type)
-
-            if uris is not None:
-                uris.insert(0,item_name)
+        uri = None
 
 
-        elif type is not None:
-            item = items[type][0]
-            context_uri = item['uri']
+        if type is not None:
+            item = items[0]
             item_name = item['name']
+            if type=='tracks':
+                uri = item['uri']
+                lastFm_manager.refill_spotify_queue(user=user,song_name=item_name)#<-- i need to populate queue only in case the user specified a track, in the other scenarios spotify will handle the queue
+            else:
+                context_uri = item['uri']
 
 
         spotify_device = slots['device'] if 'device' in slots else device#se non è specificato uso chi ha fatto la richiesta
 
-        session_id = redis_manager.save_session_state({'uris':uris,'context_uri':context_uri,'device':spotify_device.name})
+        session_id = redis_manager.save_session_state({'uri':uri,'context_uri':context_uri,'device_id':spotify_device.id})
 
         audio_response = speechProcessor.tts(f"Riproduco {item_name if item_name is not None else 'Spotify'}")
         return jsonify({ 'content':audio_response, 'id':session_id}),200#tts    
@@ -310,8 +301,9 @@ def process_audio():
     
 
     
-@device_endpoint
+
 @app.route('/play',methods=['POST'])
+@device_endpoint
 def play():
     data = request.get_json()
     if not data or 'id' not in data:
@@ -327,11 +319,11 @@ def play():
     if device is None:#se l'user non specifica il device, o il device specificato non è stato trovato usa ik device che ha fatto la request
         device = g.device
 
-    user = device.user#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
+    user = postgres_manager.get_device_owner(device_id=device.id)#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
     if session is not None:
         try:
-            spotfy_client.play(user=user,uris=session['uris'],context_uri=session['context_uri'],device_name=session['device'])#ignora il device per ora
-            return jsonify({'success':True})#niente tts se ha successo.
+            status = spotfy_client.play(user=user,uri=session['uri'],context_uri=session['context_uri'],device_name=None)#ignora il device per ora, manca un mapper tra il db id e lo spotify id per i devices
+            return jsonify({'success':status}),200#niente tts se ha successo.
         except Exception as e:
             audio_response = speechProcessor.tts(f'Errore nell\'avvio della riproduzione. : {e}')
             return jsonify({'success':False,'content': audio_response}), 500

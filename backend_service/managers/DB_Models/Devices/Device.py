@@ -13,16 +13,9 @@ class Device(Base):
     device_token = Column(String, unique=True, nullable=False) 
     
     user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    
-    device_type = Column(String, nullable=False, index=True)
-    
+        
     is_active = Column(Boolean, default=True) 
     
     user = relationship("User", back_populates="devices")
 
 
-    
-    __mapper_args__ = {
-        'polymorphic_on': device_type,
-        'polymorphic_identity': 'generic'
-    }

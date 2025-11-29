@@ -14,6 +14,7 @@ load_dotenv()
 
 PICOVOICE_API_KEY = os.getenv('PICOVOICE_API_KEY')
 BACKEND_URL = os.getenv('BACKEND_URL')
+TOKEN = os.getenv('TOKEN')
 
 if not PICOVOICE_API_KEY or BACKEND_URL is None:
     raise EnvironmentError('missing keys in environment')#tmp exception handling
@@ -104,10 +105,11 @@ def send_audio_to_backend(filepath):
         with open(filepath,'rb') as f:
             files = {'audio_file':(filepath,f,'audio/wav')}
 
-            response = requests.post(f"{BACKEND_URL}process_audio",files=files)
+            response = requests.post(f"{BACKEND_URL}process_audio",headers={"X-Device-Token":TOKEN},files=files)
 
 
             print ("Request submitted successfully")
+
             return response.json()
 
     except requests.exceptions.ConnectionError:
@@ -130,7 +132,7 @@ while True:
 
             #Submit request and receives response
             backend_response = send_audio_to_backend(recorded_file)
-
+            
             if backend_response:
                 if backend_response['content']:
                     audio_bytes = base64.b64decode(backend_response['content'].encode('utf-8'))
@@ -139,11 +141,10 @@ while True:
 
                     if 'id' in backend_response:
                         id = backend_response['id']
-                        response = requests.post(f"{BACKEND_URL}play",json={'id':id})
+                        response = requests.post(f"{BACKEND_URL}play",headers={"X-Device-Token":TOKEN},json={'id':id})
                         data = response.json()
-                        if not data['success']:
-                            audio_bytes = base64.b64decode(data['content'].encode('utf-8'))
-                            play_audio(audio_bytes)
+                        
+                        print(data['success'])
 
                 print("Listening...")
     except KeyboardInterrupt:

@@ -5,7 +5,6 @@ from sqlalchemy import (
     Integer
     )
 from sqlalchemy.orm import relationship, declared_attr
-from postgres_base import Base
 
 from managers.DB_Models import Base
 
@@ -24,7 +23,7 @@ class AppSetting(Base):
 
     __mapper_args__ = {
         'polymorphic_on': app_name,
-        'polymorphic_identify':'generic'
+        'polymorphic_identity':'generic'
     }
 
     
