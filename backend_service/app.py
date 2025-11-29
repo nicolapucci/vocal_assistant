@@ -249,9 +249,7 @@ def process_audio():
 
     if intent in PLAY_MUSIC_INTENTS:
 
-        response = spotfy_client.search_spotify_library(user,slots)      
-
-        app.logger.info(f"response: {response}")   
+        response = spotfy_client.search_spotify_library(user,slots)       
 
         if response and 'tracks' in response and 'items' in response['tracks']: #essendo una struttura if/else si fermerà solo al primo match. rivedere la priorità.
             type = 'tracks'
@@ -278,13 +276,20 @@ def process_audio():
         if type is not None:
             item = items[0]
             item_name = item['name']
+            artists = item['artists']
+            main_artist = artists[0].get('name')
             if type=='tracks':
                 uri = item['uri']
-                lastFm_manager.refill_spotify_queue(user=user,song_name=item_name)#<-- i need to populate queue only in case the user specified a track, in the other scenarios spotify will handle the queue
+                app.logger.info('sto per chiamare la funzione di refill')
+                refill_thread = threading.Thread(
+                    target=lastFm_manager.refill_spotify_queue,
+                    args=(user,item_name,main_artist)#<-- i need to populate queue only in case the user specified a track, in the other scenarios spotify will handle the queue
+                )
+                refill_thread.run()
             else:
                 context_uri = item['uri']
 
-
+        app.logger.info(f"type : {type}")
         spotify_device = slots['device'] if 'device' in slots else device#se non è specificato uso chi ha fatto la richiesta
 
         session_id = redis_manager.save_session_state({'uri':uri,'context_uri':context_uri,'device_id':spotify_device.id})

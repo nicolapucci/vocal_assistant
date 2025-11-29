@@ -94,13 +94,15 @@ class AuthHandler:
 
                 response.raise_for_status()
 
-                if response.content:
+                try:
                     return response.json()
-                else:
-                    return response.status_code
-            raise Exception #tmp flag
+                except Exception as e:
+                    return response
         else:
             response.raise_for_status()#i do it now because i want to check if it's a 401 before throwing an exception
 
-            return response.json()
+            try:
+                return response.json()
+            except Exception as e:
+                return response
         
