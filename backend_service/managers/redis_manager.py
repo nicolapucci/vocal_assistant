@@ -26,8 +26,8 @@ class RedisManager:
             self._fallback_storage = {}
 
 
-    def save_session_state(self,data:dict):
-        session_id = str(uuid.uuid4())
+    def save_session_state(self,data:dict,session_id:str=None):
+        session_id = str(uuid.uuid4()) if not session_id else session_id
         if self._client:
             json_data = json.dumps(data)
             self._client.set(session_id,json_data,ex=SESSION_EXPIRATION_SECONDS)
@@ -38,6 +38,17 @@ class RedisManager:
             print("Errore: Redis_Manager non inizializzato correttamente")
             return None
         return session_id
+    
+    def get_session_state(self,session_id)->Optional[dict]:
+        if self._client:
+            raw_data = self._client.get(session_id)
+            if raw_data:
+                return json.loads(raw_data)
+            return None
+        elif self._fallback_storage:
+            return self._fallback_storage.get(session_id,None)
+        else:
+            return #add logger here
             
     def pop_session(self,session_id)-> Optional[dict]:
 

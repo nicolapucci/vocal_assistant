@@ -247,53 +247,16 @@ def process_audio():
 
     app.logger.info(f"message_tanslation: {text_input}--intent: {intent}--slots:{slots}")
 
-    if intent in PLAY_MUSIC_INTENTS:
-
-        response = spotfy_client.search_spotify_library(user,slots)       
-
-        if response and 'tracks' in response and 'items' in response['tracks']: #essendo una struttura if/else si fermerà solo al primo match. rivedere la priorità.
-            type = 'tracks'
-        elif response and 'artists' in response and 'items' in response['artists']:
-            type = 'artists'
-        elif response and 'albums' in response and 'items' in response['albums']:
-            type = 'albums'
-        elif response and 'playlists' in response and 'items' in response['playlists']:
-            type = 'playlists'
-        else:
-            type = None
-
-        if type is not None:
-            items = response[type]['items']#do per scontato che se items è presente sia un array, forse voglio aaiungere un check qua
-        else:
-            items = None
-
-        #inizializzo tutto a None, se nessuno di questi viene cambiato allora la return sarà 'Riproduco Spotify' e la play ha un modo suo per gestire questo caso
-        context_uri = None
-        item_name = None
-        uri = None
-
-
-        if type is not None:
-            item = items[0]
-            item_name = item['name']
-            artists = item['artists']
-            main_artist = artists[0].get('name')
-            if type=='tracks':
-                uri = item['uri']
-                app.logger.info('sto per chiamare la funzione di refill')
-                refill_thread = threading.Thread(
-                    target=lastFm_manager.refill_spotify_queue,
-                    args=(user,item_name,main_artist)#<-- i need to populate queue only in case the user specified a track, in the other scenarios spotify will handle the queue
-                )
-                refill_thread.start()
-            else:
-                context_uri = item['uri']
-
-        app.logger.info(f"type : {type}")
-        spotify_device = slots['device'] if 'device' in slots else device#se non è specificato uso chi ha fatto la richiesta
-
-        session_id = redis_manager.save_session_state({'uri':uri,'context_uri':context_uri,'device_id':spotify_device.id})
-
+    if intent in PLAY_MUSIC_INTENTS: #<-- for now i only use spotify for this intent
+        session_id,item_name,should_call_lastFm = spotfy_client.generate_spotify_context(user=user,device=device,slots=slots)
+        
+        if should_call_lastFm:
+            refill_thread = threading.Thread(#espanderà la lista di uris con brani simili presi da last.fm track.getsimilar
+            target=lastFm_manager.generate_spotify_radio,
+            args=(user,session_id)
+            )
+            refill_thread.start()
+            
         audio_response = speechProcessor.tts(f"Riproduco {item_name if item_name is not None else 'Spotify'}")
         return jsonify({ 'content':audio_response, 'id':session_id}),200#tts    
 
@@ -314,24 +277,14 @@ def play():
     if not data or 'id' not in data:
         audio_response = speechProcessor.tts("C'è stato un errore")
         return jsonify({'content':audio_response}),400
+    
     id = data['id']
-    session = redis_manager.pop_session(session_id=id)
+    device = g.device
+    user = postgres_manager.get_device_owner(device_id=device.id)
 
-    device = None
-    if session['device_id']:
-        device = postgres_manager.get_device_by_id(session['device_id'])
-
-    if device is None:#se l'user non specifica il device, o il device specificato non è stato trovato usa ik device che ha fatto la request
-        device = g.device
-
-    user = postgres_manager.get_device_owner(device_id=device.id)#questo verrà aggiornato quando aggiorno SpotifyClient, per ora lasciamolo così
-    if session is not None:
-        try:
-            status = spotfy_client.play(user=user,uri=session['uri'],context_uri=session['context_uri'],device_name=None)#ignora il device per ora, manca un mapper tra il db id e lo spotify id per i devices
+    status = spotfy_client.play(user=user,session_id=id)
+    if status:
             return jsonify({'success':status}),200#niente tts se ha successo.
-        except Exception as e:
-            audio_response = speechProcessor.tts(f'Errore nell\'avvio della riproduzione. : {e}')
-            return jsonify({'success':False,'content': audio_response}), 500
     else:
         audio_response =speechProcessor.tts(f'Errore nell\'avvio della riproduzione.')
         return jsonify({'success':False,'content': audio_response}), 500

@@ -7,12 +7,12 @@ import time
 
 from managers.DB_Models import User
 
+from managers.redis_manager import initialize_redis_manager
 from clients.spotify_client import SpotifyClient
 
 
 LAST_FM_URL = 'https://ws.audioscrobbler.com/2.0/'
 API_KEY = os.getenv('LAST_FM_KEY')
-DELAY_SECONDS = 5
 
 def normalize_track_name(name: str) -> str:
     name = re.sub(r'\s*\(.*\)', '', name)
@@ -20,7 +20,7 @@ def normalize_track_name(name: str) -> str:
     name = name.strip()
     return name
 
-
+redis_manager = initialize_redis_manager()
 logger = logging.getLogger(__name__)
 
 class LastFm:
@@ -28,11 +28,20 @@ class LastFm:
         self.spotify_client = SpotifyClient()
 
 
-    def refill_spotify_queue(self,user:User,song_name:str,artist_name:str):#<-- i don't need this for artist/albums/playlists.
+    def generate_spotify_radio(self,user:User,session_id:str):#<-- i don't need this for artist/albums/playlists.
 
-        if not song_name:
-            logger.error('No song name provided')
+        if not session_id:
+            logger.error('No session_id provided')
             return None #tmp flag
+        
+        session = redis_manager.get_session_state(session_id=session_id)
+
+        song_name:str = session.get('track')
+        artist_name:str = session.get('artist')
+        uris:list = session.get('uris')
+
+        if not song_name or not artist_name or uris is None:
+            return #logging here
         
         params = {
             "method":"track.getsimilar",
@@ -41,7 +50,7 @@ class LastFm:
             "format":"json",
             "api_key":API_KEY,
             "autocorrect":1,
-            "limit":50
+            "limit":15#<--per aumentanre il numero di traccie bisogna ridurre i tempi di esecuzioni(ciclo for con chiamata a /search deve molte chiamate concorrenti)
             }
 
         results = requests.get(#<-- no need to overcomplicate thigs, this is a simple get where the tokes in in the params
@@ -67,8 +76,7 @@ class LastFm:
             artist_name = entry.get('artist',{}).get('name','')
             tracks.append({"name":entry['name'],"artist":artist_name})
 
-        time.sleep(DELAY_SECONDS)
-        for track in tracks:
+        for track in tracks:#<-- creare 1 thread parallelo per ogni track, così da minimizzare i tempi necessari
             if track['name'] != song_name: #<-- i already added song_name to the queue b4 looking for similar songs
                 try:
                     #when i'll add caching i will check the cache here.
@@ -76,10 +84,11 @@ class LastFm:
                     spotify_response = self.spotify_client.search_spotify_library(user=user,search_params=search_params)
 
                     uri =  spotify_response['tracks']['items'][0]['uri']
-                    self.spotify_client.add_to_queue(user,uri)
-                    #then add it to the cache
+
+                    uris.append(uri)
 
                 except Exception as e:
                     logger.exception(f"Error in populating the queue; {e}")
-                
+
+        redis_manager.save_session_state(session_id=session_id,data=session)
         return
