@@ -77,18 +77,19 @@ class LastFm:
             tracks.append({"name":entry['name'],"artist":artist_name})
 
         for track in tracks:#<-- creare 1 thread parallelo per ogni track, così da minimizzare i tempi necessari
-            if track['name'] != song_name: #<-- i already added song_name to the queue b4 looking for similar songs
+            if track['name'] != song_name: #<-- uri della track richiesta dall'user è già stata aggiunta a uris di sessione
                 try:
-                    #when i'll add caching i will check the cache here.
+                    #quando sarà implementato il caching, verrà prima controllata la cache e se non viene trovato l'oggetto nella cache allora viene eseguito il blocco seguente
                     search_params = [{'song_name':track['name']},{'artist_name':track['artist']}]
                     spotify_response = self.spotify_client.search_spotify_library(user=user,search_params=search_params)
 
+                    #se fallisce e genera eccezione non viene aggiunto alla coda e il ciclo continua.
                     uri =  spotify_response['tracks']['items'][0]['uri']
 
                     uris.append(uri)
 
                 except Exception as e:
-                    logger.exception(f"Error in populating the queue; {e}")
+                    logger.exception(f"Track {song_name} not found on Spotify")
 
         redis_manager.save_session_state(session_id=session_id,data=session)
         return
